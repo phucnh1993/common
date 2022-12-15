@@ -71,18 +71,8 @@ namespace PhucNH.Commons.Extensions
             HashAlgorithmName hashType)
         {
             string result = string.Empty;
-            if (datas == null)
-            {
-                throw new ArgumentNullException(
-                    nameof(HashAsync),
-                    "Please check argument [dataObject], value is empty.");
-            }
             using (var sha = await hashType.CreateHashAsync())
             {
-                if (sha == null)
-                {
-                    return result;
-                }
                 byte[] hashValue = sha.ComputeHash(datas);
                 result = Convert.ToBase64String(hashValue);
             }
@@ -161,11 +151,6 @@ namespace PhucNH.Commons.Extensions
             var keyBytes = Encoding.Unicode.GetBytes(key);
             using (var sha = await hashType.CreateHashMacAsync(keyBytes))
             {
-                if (sha == null)
-                {
-                    return result;
-                }
-                
                 byte[] hashValue = sha.ComputeHash(datas);
                 result = Convert.ToBase64String(hashValue);
             }

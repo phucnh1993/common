@@ -54,6 +54,12 @@ namespace PhucNH.Commons.Extensions.Tests
                 null,
                 HashAlgorithmName.SHA512,
                 88
+            },
+            new object?[]
+            {
+                new byte[0],
+                HashAlgorithmName.SHA512,
+                88
             }
         };
 

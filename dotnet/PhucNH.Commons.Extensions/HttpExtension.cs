@@ -126,12 +126,10 @@ namespace PhucNH.Commons.Extensions
                     var response = await client.SendAsync(request);
                     if (response.IsSuccessStatusCode)
                     {
-                        var responseStream = await response.Content.ReadAsStreamAsync();
-                        if (responseStream != null)
+                        var responseStream = await response.Content.ReadAsStringAsync();
+                        if (!string.IsNullOrEmpty(responseStream))
                         {
-                            result = await JsonSerializer.DeserializeAsync<TResult>(responseStream) ??
-                                Activator.CreateInstance<TResult>();
-                            return (response.StatusCode, result);
+                            result = JsonSerializer.Deserialize<TResult>(responseStream);
                         }
                     }
                     return (response.StatusCode, result);
