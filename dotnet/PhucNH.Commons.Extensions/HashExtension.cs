@@ -55,8 +55,23 @@ namespace PhucNH.Commons.Extensions
             this TData dataObject,
             HashAlgorithmName hashType)
         {
+            string data = JsonSerializer.Serialize(dataObject);
+            var dataBytes = Encoding.Unicode.GetBytes(data);
+            return await dataBytes.HashAsync(hashType);
+        }
+
+        /// <summary>
+        /// Hash a byte array.
+        /// </summary>
+        /// <param name="datas">Byte array data.</param>
+        /// <param name="hashType">Hash type.</param>
+        /// <returns>Hash result.</returns>
+        public static async Task<string> HashAsync(
+            this byte[] datas,
+            HashAlgorithmName hashType)
+        {
             string result = string.Empty;
-            if (dataObject == null)
+            if (datas == null)
             {
                 throw new ArgumentNullException(
                     nameof(HashAsync),
@@ -68,9 +83,7 @@ namespace PhucNH.Commons.Extensions
                 {
                     return result;
                 }
-                string data = JsonSerializer.Serialize(dataObject);
-                var dataBytes = Encoding.Unicode.GetBytes(data);
-                byte[] hashValue = sha.ComputeHash(dataBytes);
+                byte[] hashValue = sha.ComputeHash(datas);
                 result = Convert.ToBase64String(hashValue);
             }
             return result ?? string.Empty;
@@ -121,8 +134,25 @@ namespace PhucNH.Commons.Extensions
             string key,
             HashAlgorithmName hashType)
         {
+            string data = JsonSerializer.Serialize(dataObject);
+            var dataBytes = Encoding.Unicode.GetBytes(data);
+            return await dataBytes.HashMacAsync(key, hashType);
+        }
+
+        /// <summary>
+        /// Hash mac a byte array.
+        /// </summary>
+        /// <param name="datas">Byte array data.</param>
+        /// <param name="key">Key for hash.</param>
+        /// <param name="hashType">Hash type.</param>
+        /// <returns></returns>
+        public static async Task<string> HashMacAsync(
+            this byte[] datas,
+            string key,
+            HashAlgorithmName hashType)
+        {
             string result = string.Empty;
-            if (dataObject == null || string.IsNullOrEmpty(key))
+            if (datas == null || string.IsNullOrEmpty(key))
             {
                 throw new ArgumentNullException(
                     nameof(HashMacAsync),
@@ -135,9 +165,8 @@ namespace PhucNH.Commons.Extensions
                 {
                     return result;
                 }
-                string data = JsonSerializer.Serialize(dataObject);
-                var dataBytes = Encoding.Unicode.GetBytes(data);
-                byte[] hashValue = sha.ComputeHash(dataBytes);
+                
+                byte[] hashValue = sha.ComputeHash(datas);
                 result = Convert.ToBase64String(hashValue);
             }
             return result ?? string.Empty;
