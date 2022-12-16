@@ -70,6 +70,7 @@ public class HttpExtensionTest
         var client = new HttpClient(_mockHttpClient);
         var result = await client.CallApiAsync<object, object>(method, url, headers, queries, formDatas, body);
         var properties = result.GetType().GetProperties();
+        Assert.Equal(status, result.Item1);
         foreach (var property in properties)
         {
             var resultValue = property.GetValue(result)?.ToString();
@@ -93,6 +94,7 @@ public class HttpExtensionTest
         {
             var result = await client.CallApiAsync<object, object>(method, url, headers, queries, formDatas, body);
             var properties = result.GetType().GetProperties();
+            Assert.Equal(status, result.Item1);
             foreach (var property in properties)
             {
                 var resultValue = property.GetValue(result)?.ToString();
