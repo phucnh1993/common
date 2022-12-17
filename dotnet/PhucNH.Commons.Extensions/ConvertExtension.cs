@@ -24,7 +24,7 @@ namespace PhucNH.Commons.Extensions
             }
             catch
             {
-                return long.MinValue;
+                return 0;
             }
         }
 
@@ -48,7 +48,7 @@ namespace PhucNH.Commons.Extensions
             }
             catch
             {
-                return int.MinValue;
+                return 0;
             }
         }
 
@@ -72,7 +72,7 @@ namespace PhucNH.Commons.Extensions
             }
             catch
             {
-                return short.MinValue;
+                return 0;
             }
         }
 
@@ -96,7 +96,7 @@ namespace PhucNH.Commons.Extensions
             }
             catch
             {
-                return sbyte.MinValue;
+                return 0;
             }
         }
 

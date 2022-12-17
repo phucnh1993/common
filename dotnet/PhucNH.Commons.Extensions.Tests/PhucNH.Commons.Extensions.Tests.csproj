@@ -7,8 +7,8 @@
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2"/>
-    <PackageReference Include="xunit" Version="2.4.2"/>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
+    <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -17,11 +17,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="coverlet.msbuild" Version="3.2.0"/>
-    <PackageReference Include="dotnet-reportgenerator-cli" Version="4.6.7"/>
-    <PackageReference Include="RichardSzalay.MockHttp" Version="6.0.0"/>
+    <PackageReference Include="coverlet.msbuild" Version="3.2.0" />
+    <PackageReference Include="dotnet-reportgenerator-cli" Version="4.6.7" />
+    <PackageReference Include="RichardSzalay.MockHttp" Version="6.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PhucNH.Commons.Extensions\PhucNH.Commons.Extensions.csproj"/>
+    <ProjectReference Include="..\PhucNH.Commons.Extensions\PhucNH.Commons.Extensions.csproj" />
+    <ProjectReference Include="..\PhucNH.Commons.Bases\PhucNH.Commons.Bases.csproj" />
   </ItemGroup>
 </Project>

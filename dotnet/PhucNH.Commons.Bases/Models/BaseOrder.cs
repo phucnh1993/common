@@ -1,4 +1,4 @@
-namespace PhucNH.Commons.Extensions.BaseModels
+namespace PhucNH.Commons.Bases.Models
 {
     public class BaseOrder : BasePaging
     {

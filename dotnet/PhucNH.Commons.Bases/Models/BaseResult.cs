@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace PhucNH.Commons.Extensions.BaseModels
+namespace PhucNH.Commons.Bases.Models
 {
     public abstract class BaseResult<TData, TMessage>
     {

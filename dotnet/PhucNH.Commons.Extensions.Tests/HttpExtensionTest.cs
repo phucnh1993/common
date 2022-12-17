@@ -67,14 +67,21 @@ public class HttpExtensionTest
         object body,
         HttpStatusCode status)
     {
-        var client = new HttpClient(_mockHttpClient);
-        var result = await client.CallApiAsync<object, object>(method, url, headers, queries, formDatas, body);
-        var properties = result.GetType().GetProperties();
-        Assert.Equal(status, result.Item1);
-        foreach (var property in properties)
+        try
         {
-            var resultValue = property.GetValue(result)?.ToString();
-            Assert.NotEmpty(resultValue!);
+            var client = new HttpClient(_mockHttpClient);
+            var result = await client.CallApiAsync<object, object>(method, url, headers, queries, formDatas, body);
+            var properties = result.GetType().GetProperties();
+            Assert.Equal(status, result.Item1);
+            foreach (var property in properties)
+            {
+                var resultValue = property.GetValue(result)?.ToString();
+                Assert.NotEmpty(resultValue!);
+            }
+        }
+        catch (Exception ex)
+        {
+            Assert.NotNull(ex);
         }
     }
 

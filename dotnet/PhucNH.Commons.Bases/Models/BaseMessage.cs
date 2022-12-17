@@ -1,5 +1,5 @@
 using System;
-namespace PhucNH.Commons.Extensions.BaseModels
+namespace PhucNH.Commons.Bases.Models
 {
     public abstract class BaseMessage<TCode>
     {
