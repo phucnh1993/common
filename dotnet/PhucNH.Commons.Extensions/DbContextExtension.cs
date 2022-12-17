@@ -378,7 +378,215 @@ namespace PhucNH.Commons.Extensions
                 .Provider
                 .CreateQuery(methodCallExpression);
         }
+
+        /// <summary>
+        /// Get any property is not order or paging.
+        /// </summary>
+        /// <typeparam name="TRequest">A object inclue request info.</typeparam>
+        /// <returns>A list property info.</returns>
+        public static List<PropertyInfo> GetNonOrderPagingProperties<TRequest>()
+        {
+            var requestType = typeof(TRequest) ??
+                Activator.CreateInstance<Type>();
+            return requestType
+                .GetProperties()
+                .Where(
+                    x => !x.Name.Equals(ConstantExtension.ColumnOrder) &&
+                        !x.Name.Equals(ConstantExtension.IsDesc) &&
+                        !x.Name.Equals(ConstantExtension.PageIndex) &&
+                        !x.Name.Equals(ConstantExtension.PageSize))
+                .ToList();
+        }
         #endregion DB_PAGING
+
+        #region DB_COMPARE
+        /// <summary>
+        /// Method support build a equal for a property of entity of method WHERE.
+        /// </summary>
+        /// <param name="propertyInfo">Property info of entity.</param>
+        /// <param name="paramName">Name is map of entity.</param>
+        /// <param name="value">Value compare.</param>
+        /// <typeparam name="TEntity">Type of entity.</typeparam>
+        /// <typeparam name="TValue">Type of value.</typeparam>
+        /// <returns>A expression compare equal.</returns>
+        public static Expression<Func<TEntity, bool>> BuildEqual<TEntity, TValue>(
+            this PropertyInfo propertyInfo,
+            string paramName,
+            TValue value)
+        {
+            var declareType = propertyInfo.DeclaringType;
+            declareType.ValidateNullObject(nameof(BuildEqual), ConstantExtension.ArgumentPropertyTypeNull);
+            var propertyParam = Expression.Parameter(declareType, paramName);
+            var propertyExp = Expression.Property(propertyParam, propertyInfo);
+            return Expression.Lambda<Func<TEntity, bool>>(
+                Expression.Equal(propertyExp, Expression.Constant(value, typeof(TValue))),
+                new[] { propertyParam });
+        }
+
+        /// <summary>
+        /// Build mapping property between two object.
+        /// </summary>
+        /// <typeparam name="TEntity">Current entity object type.</typeparam>
+        /// <typeparam name="TResult">New entity object type.</typeparam>
+        /// <returns>A enumerable mapping.</returns>
+        public static IEnumerable<MemberAssignment> BuildMapping<TEntity, TResult>()
+        {
+            IEnumerable<MemberAssignment> results = null;
+            var source = Expression.Parameter(typeof(TEntity), "o");
+            var resultType = typeof(TResult);
+            var sourceType = typeof(TEntity);
+            var resultProperties = resultType.GetProperties();
+            if (resultProperties.Any())
+            {
+                results = resultProperties.Select(
+                    p => sourceType.GetProperty(p.Name) != null &&
+                        sourceType.GetProperty(p.Name).GetType() == p.GetType() ?
+                        Expression.Bind(p, Expression.Property(source, p.Name)) :
+                        Expression.Bind(p, Expression.Default(resultType.GetProperty(p.Name).GetType())));
+            }
+            return results;
+        }
+
+        /// <summary>
+        /// Get method compare by property name.
+        /// </summary>
+        /// <param name="property">Property info.</param>
+        /// <returns>Method info.</returns>
+        public static MethodInfo GetMethodInfo(
+            this PropertyInfo property)
+        {
+            var type = property.GetType();
+            if (property.Name.ToLower().Contains("from"))
+            {
+                return type.GetMethod(">=");
+            }
+            if (property.Name.ToLower().Contains("to"))
+            {
+                return type.GetMethod("<=");
+            }
+            if (type == typeof(string))
+            {
+                return type.GetMethod("Contains");
+            }
+            return type.GetMethod("==");
+        }
+        #endregion DB_COMPARE
+
+        #region DB_SELECT
+        /// <summary>
+        /// Build a single get entity by ID.
+        /// </summary>
+        /// <param name="query">Root query.</param>
+        /// <param name="id">ID compare.</param>
+        /// <typeparam name="TEntity">Type of entity in query.</typeparam>
+        /// <typeparam name="TId">Type of ID compare.</typeparam>
+        /// <returns>A new query with filter compare ID.</returns>
+        public static IQueryable<TEntity> BuildSingle<TEntity, TId>(
+            this IQueryable<TEntity> query,
+            TId id)
+        {
+            query.ValidateNullObject(nameof(BuildSingle), ConstantExtension.ArgumentQueryNull);
+            var entityType = typeof(TEntity);
+            entityType.ValidateNullObject(nameof(BuildSingle), ConstantExtension.ArgumentPropertyTypeNull);
+            var entityProperty = entityType.GetProperty("Id");
+            entityProperty.ValidateNullObject(nameof(BuildSingle), ConstantExtension.ArgumentPropertyNull);
+            var compareExpression = entityProperty.BuildEqual<TEntity, TId>(
+                string.Empty,
+                id);
+            var methodCallExpression = Expression.Call(
+                    typeof(Queryable),
+                    "Where",
+                    new Type[] { query.ElementType },
+                    query.Expression,
+                    Expression.Quote(compareExpression));
+            query = query.Provider.CreateQuery<TEntity>(
+                methodCallExpression);
+            return query;
+        }
+
+        /// <summary>
+        /// Build a select new item from query.
+        /// </summary>
+        /// <param name="query">Base query.</param>
+        /// <typeparam name="TEntity">Current entity type.</typeparam>
+        /// <typeparam name="TResult">New entity type.</typeparam>
+        /// <returns>New query.</returns>
+        public static IQueryable<TResult> BuildSelect<TEntity, TResult>(
+            this IQueryable<TEntity> query)
+        {
+            query.ValidateNullObject(
+                nameof(BuildSelect),
+                ConstantExtension.ArgumentQueryNull);
+            var source = Expression.Parameter(typeof(TEntity), "o");
+            var resultType = typeof(TResult);
+            var resultProperties = resultType.GetProperties();
+            var bindings = resultProperties.Select(
+                p => Expression.Bind(resultType?.GetProperty(p.Name), Expression.Property(source, p.Name)));
+            bindings.ValidateNullObject(
+                nameof(BuildSelect),
+                ConstantExtension.ArgumentBindingNull);
+            var result = Expression.MemberInit(Expression.New(resultType), bindings);
+            var objectExpression = Expression.Lambda(result, source);
+            var methodCallExpression = Expression.Call(
+                typeof(IQueryable),
+                "Select",
+                new Type[] { query.ElementType, resultType },
+                query.Expression,
+                Expression.Quote(objectExpression));
+            methodCallExpression.ValidateNullObject(
+                nameof(BuildSelect),
+                ConstantExtension.ArgumentMethodNull);
+            return query.Provider.CreateQuery<TResult>(methodCallExpression);
+        }
+        #endregion DB_SELECT
+
+        #region DB_WHERE
+        /// <summary>
+        /// Build a search data from query.
+        /// </summary>
+        /// <param name="query">Base query.</param>
+        /// <param name="request">Request query.</param>
+        /// <typeparam name="TEntity">Entity type.</typeparam>
+        /// <typeparam name="TRequest">Request type.</typeparam>
+        /// <returns>New query.</returns>
+        public static IQueryable<TEntity> BuildSearch<TEntity, TRequest>(
+            this IQueryable<TEntity> query,
+            TRequest request)
+        {
+            query.ValidateNullObject(
+                nameof(BuildSearch),
+                ConstantExtension.ArgumentQueryNull);
+            var objectType = typeof(TEntity) ??
+                Activator.CreateInstance<Type>();
+            var requestProperties = GetNonOrderPagingProperties<TRequest>();
+            if (!requestProperties.Any())
+                return query;
+            foreach (var requestProperty in requestProperties)
+            {
+                var requestValue = requestProperty.GetValue(request);
+                var objectProperty = objectType.GetProperty(requestProperty.Name);
+                if (requestValue == null && objectProperty == null)
+                    continue;
+                MethodInfo method = requestProperty.GetMethodInfo();
+                if (method == null)
+                    continue;
+
+                method.Invoke(null, new object[] {
+                    requestProperty.Name, requestValue
+                });
+                ParameterExpression parameter = Expression
+                    .Parameter(query.ElementType, string.Empty);
+                MemberExpression propertyMember = Expression
+                    .Property(parameter, objectProperty.Name);
+                LambdaExpression objectExpression = Expression
+                    .Lambda(propertyMember, parameter);
+                Expression methodCallExpression = Expression.Call(objectExpression, method);
+
+                query = query.Provider.CreateQuery<TEntity>(methodCallExpression);
+            }
+            return query;
+        }
+        #endregion DB_WHERE
 
         #region DB_COMMIT
         /// <summary>
@@ -392,6 +600,7 @@ namespace PhucNH.Commons.Extensions
             this IQueryable<TSource> query,
             CancellationToken cancellationToken = default)
         {
+            query.ValidateNullObject(nameof(ToListNoLockAsync), ConstantExtension.ArgumentQueryNull);
             using (var transactionScope = new TransactionScope(
                 TransactionScopeOption.Required,
                 ReadOption,
@@ -417,6 +626,7 @@ namespace PhucNH.Commons.Extensions
             Expression<Func<TSource, bool>> predicate,
             CancellationToken cancellationToken = default)
         {
+            query.ValidateNullObject(nameof(ToListNoLockAsync), ConstantExtension.ArgumentQueryNull);
             using (var transactionScope = new TransactionScope(
                 TransactionScopeOption.Required,
                 ReadOption,
@@ -441,6 +651,7 @@ namespace PhucNH.Commons.Extensions
             this IQueryable<TSource> query,
             CancellationToken cancellationToken = default)
         {
+            query.ValidateNullObject(nameof(FirstOrDefaultNoLockAsync), ConstantExtension.ArgumentQueryNull);
             using (var transactionScope = new TransactionScope(
                 TransactionScopeOption.Required,
                 ReadOption,
@@ -466,6 +677,7 @@ namespace PhucNH.Commons.Extensions
             Expression<Func<TSource, bool>> predicate,
             CancellationToken cancellationToken = default)
         {
+            query.ValidateNullObject(nameof(FirstOrDefaultNoLockAsync), ConstantExtension.ArgumentQueryNull);
             using (var transactionScope = new TransactionScope(
                 TransactionScopeOption.Required,
                 ReadOption,
@@ -492,6 +704,7 @@ namespace PhucNH.Commons.Extensions
             Expression<Func<TSource, bool>> predicate,
             CancellationToken cancellationToken = default)
         {
+            query.ValidateNullObject(nameof(CountNoLockAsync), ConstantExtension.ArgumentQueryNull);
             using (var transactionScope = new TransactionScope(
                 TransactionScopeOption.Required,
                 ReadOption,
@@ -517,6 +730,7 @@ namespace PhucNH.Commons.Extensions
             this IQueryable<TSource> query,
             CancellationToken cancellationToken = default)
         {
+            query.ValidateNullObject(nameof(CountNoLockAsync), ConstantExtension.ArgumentQueryNull);
             using (var transactionScope = new TransactionScope(
                 TransactionScopeOption.Required,
                 ReadOption,
@@ -542,6 +756,7 @@ namespace PhucNH.Commons.Extensions
             Expression<Func<TSource, bool>> predicate,
             CancellationToken cancellationToken = default)
         {
+            query.ValidateNullObject(nameof(LongCountNoLockAsync), ConstantExtension.ArgumentQueryNull);
             using (var transactionScope = new TransactionScope(
                 TransactionScopeOption.Required,
                 ReadOption,
@@ -567,6 +782,7 @@ namespace PhucNH.Commons.Extensions
             this IQueryable<TSource> query,
             CancellationToken cancellationToken = default)
         {
+            query.ValidateNullObject(nameof(LongCountNoLockAsync), ConstantExtension.ArgumentQueryNull);
             using (var transactionScope = new TransactionScope(
                 TransactionScopeOption.Required,
                 ReadOption,
@@ -592,6 +808,7 @@ namespace PhucNH.Commons.Extensions
             Expression<Func<TSource, bool>> predicate,
             CancellationToken cancellationToken = default)
         {
+            query.ValidateNullObject(nameof(ULongCountNoLockAsync), ConstantExtension.ArgumentQueryNull);
             var result = await query.LongCountNoLockAsync(
                     predicate,
                     cancellationToken);
@@ -610,6 +827,7 @@ namespace PhucNH.Commons.Extensions
             this IQueryable<TSource> query,
             CancellationToken cancellationToken = default)
         {
+            query.ValidateNullObject(nameof(ULongCountNoLockAsync), ConstantExtension.ArgumentQueryNull);
             var result = await query.LongCountNoLockAsync(
                     cancellationToken);
             return (ulong)result;
