@@ -229,9 +229,13 @@ namespace PhucNH.Commons.Extensions.Tests
                     Assert.NotNull(query);
                 }
                 var result = await query
-                    .BuildListing<BaseItem<ulong>, BaseOrder>(order)
+                    .BuildSelect<BaseItem<ulong>, ObjectFaker>()
                     .ToListAsync();
+                var count = await query
+                    .BuildSelect<BaseItem<ulong>, ObjectFaker>()
+                    .ULongCountNoLockAsync();
                 Assert.NotEmpty(result);
+                Assert.NotEqual(0UL, count);
             }
             catch (Exception ex)
             {
